@@ -1,0 +1,12 @@
+find . -name "*.o" -exec rm {} \;
+find . -name "*.orig" -exec rm {} \;
+find . -name "*.swp" -exec rm {} \;
+find . -name "*.*~" -exec rm {} \;
+find . -name "*~" -exec rm {} \;
+find . -name "*.d" -exec rm {} \;
+find . -name "*.a" -exec rm {} \;
+find . -name "tags" -exec rm {} \;
+find . -name ".*" -exec rm -rf 2> /dev/null \;
+find . -name "*.ko" -exec rm {} \;
+find . -name ".*.cmd" -exec rm {} \;
+find . -name "*.mod.c" -exec rm {} \;
