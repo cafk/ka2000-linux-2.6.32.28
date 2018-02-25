@@ -287,6 +287,11 @@ static void __init bootmem_reserve_initrd(int node)
 #ifdef CONFIG_BLK_DEV_INITRD
 	pg_data_t *pgdat = NODE_DATA(node);
 	int res;
+	if (phys_initrd_start == 0)
+	{
+	    phys_initrd_start = SZ_1M * 5;
+        phys_initrd_size = SZ_1M * 3;
+	}
 
 	res = reserve_bootmem_node(pgdat, phys_initrd_start,
 			     phys_initrd_size, BOOTMEM_EXCLUSIVE);

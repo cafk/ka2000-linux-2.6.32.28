@@ -31,6 +31,9 @@ ENTRY(v4_flush_kern_cache_all)
 #ifdef CONFIG_CPU_CP15
 	mov	r0, #0
 	mcr	p15, 0, r0, c7, c7, 0		@ flush ID cache
+#ifdef CONFIG_ARCH_KA2000
+        nop
+#endif
 	mov	pc, lr
 #else
 	/* FALLTHROUGH */
@@ -118,6 +121,9 @@ ENTRY(v4_dma_flush_range)
 #ifdef CONFIG_CPU_CP15
 	mov	r0, #0
 	mcr	p15, 0, r0, c7, c7, 0		@ flush ID cache
+#ifdef CONFIG_ARCH_KA2000
+        nop
+#endif
 #endif
 	/* FALLTHROUGH */
 

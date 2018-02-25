@@ -61,15 +61,11 @@ ENTRY(cpu_arm926_proc_init)
  * cpu_arm926_proc_fin()
  */
 ENTRY(cpu_arm926_proc_fin)
-	stmfd	sp!, {lr}
-	mov	ip, #PSR_F_BIT | PSR_I_BIT | SVC_MODE
-	msr	cpsr_c, ip
-	bl	arm926_flush_kern_cache_all
 	mrc	p15, 0, r0, c1, c0, 0		@ ctrl register
 	bic	r0, r0, #0x1000			@ ...i............
 	bic	r0, r0, #0x000e			@ ............wca.
 	mcr	p15, 0, r0, c1, c0, 0		@ disable caches
-	ldmfd	sp!, {pc}
+	mov	pc, lr
 
 /*
  * cpu_arm926_reset(loc)
@@ -108,8 +104,8 @@ ENTRY(cpu_arm926_do_idle)
 	mrs	r3, cpsr			@ Disable FIQs while Icache
 	orr	ip, r3, #PSR_F_BIT		@ is disabled
 	msr	cpsr_c, ip
-	mcr	p15, 0, r2, c1, c0, 0		@ Disable I cache
-	mcr	p15, 0, r0, c7, c0, 4		@ Wait for interrupt
+	mcr	p15, 0, r2, c1, c0, 0		@ Disable I cache	
+    mcr	p15, 0, r0, c7, c0, 4		@ Wait for interrupt
 	mcr	p15, 0, r1, c1, c0, 0		@ Restore ICache enable
 	msr	cpsr_c, r3			@ Restore FIQ state
 	mov	pc, lr
@@ -141,6 +137,9 @@ __flush_whole_cache:
 	tst	r2, #VM_EXEC
 	mcrne	p15, 0, ip, c7, c5, 0		@ invalidate I cache
 	mcrne	p15, 0, ip, c7, c10, 4		@ drain WB
+	nop
+	nop
+	nop
 	mov	pc, lr
 
 /*
@@ -178,6 +177,9 @@ ENTRY(arm926_flush_user_cache_range)
 	blo	1b
 	tst	r2, #VM_EXEC
 	mcrne	p15, 0, ip, c7, c10, 4		@ drain WB
+	nop
+	nop
+	nop
 	mov	pc, lr
 
 /*
@@ -211,6 +213,9 @@ ENTRY(arm926_coherent_user_range)
 	cmp	r0, r1
 	blo	1b
 	mcr	p15, 0, r0, c7, c10, 4		@ drain WB
+	nop
+	nop
+	nop
 	mov	pc, lr
 
 /*
@@ -230,6 +235,9 @@ ENTRY(arm926_flush_kern_dcache_page)
 	mov	r0, #0
 	mcr	p15, 0, r0, c7, c5, 0		@ invalidate I cache
 	mcr	p15, 0, r0, c7, c10, 4		@ drain WB
+	nop
+	nop
+	nop	
 	mov	pc, lr
 
 /*
@@ -301,6 +309,9 @@ ENTRY(arm926_dma_flush_range)
 	cmp	r0, r1
 	blo	1b
 	mcr	p15, 0, r0, c7, c10, 4		@ drain WB
+	nop
+	nop
+	nop
 	mov	pc, lr
 
 ENTRY(arm926_cache_fns)
@@ -346,6 +357,9 @@ ENTRY(cpu_arm926_switch_mm)
 #endif
 	mcr	p15, 0, ip, c7, c5, 0		@ invalidate I cache
 	mcr	p15, 0, ip, c7, c10, 4		@ drain WB
+	nop
+	nop
+	nop
 	mcr	p15, 0, r0, c2, c0, 0		@ load page table pointer
 	mcr	p15, 0, ip, c8, c7, 0		@ invalidate I & D TLBs
 #endif

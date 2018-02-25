@@ -158,7 +158,7 @@ arm_vm_region_alloc(struct arm_vm_region *head, size_t size, gfp_t gfp)
 static struct arm_vm_region *arm_vm_region_find(struct arm_vm_region *head, unsigned long addr)
 {
 	struct arm_vm_region *c;
-	
+
 	list_for_each_entry(c, &head->vm_list, vm_list) {
 		if (c->vm_active && c->vm_start == addr)
 			goto out;

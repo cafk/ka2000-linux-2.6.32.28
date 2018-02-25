@@ -58,11 +58,13 @@ SECTIONS
 		__security_initcall_start = .;
 			*(.security_initcall.init)
 		__security_initcall_end = .;
+#ifndef CONFIG_ARCH_KA2000		
 #ifdef CONFIG_BLK_DEV_INITRD
 		. = ALIGN(32);
 		__initramfs_start = .;
 			usr/built-in.o(.init.ramfs)
 		__initramfs_end = .;
+#endif
 #endif
 		. = ALIGN(PAGE_SIZE);
 		__per_cpu_load = .;
@@ -71,11 +73,19 @@ SECTIONS
 			*(.data.percpu)
 			*(.data.percpu.shared_aligned)
 		__per_cpu_end = .;
+		
 #ifndef CONFIG_XIP_KERNEL
 		__init_begin = _stext;
 		INIT_DATA
 		. = ALIGN(PAGE_SIZE);
 		__init_end = .;
+#endif
+
+#ifdef CONFIG_ARCH_KA2000		
+#ifdef CONFIG_BLK_DEV_INITRD
+		__initramfs_start = .;
+		__initramfs_end = .;
+#endif
 #endif
 	}
 

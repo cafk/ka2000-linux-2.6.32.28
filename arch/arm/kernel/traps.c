@@ -28,9 +28,10 @@
 #include <asm/unistd.h>
 #include <asm/traps.h>
 #include <asm/unwind.h>
-
+#include <mach/ka2000.h>
 #include "ptrace.h"
 #include "signal.h"
+#define UARTC(ch);	*(volatile u32 __force *) (0x55000000 + 0xa0004000) = (ch);
 
 static const char *handler[]= { "prefetch abort", "data abort", "address exception", "interrupt" };
 
@@ -273,7 +274,19 @@ NORET_TYPE void die(const char *str, struct pt_regs *regs, int err)
 
 	do_exit(SIGSEGV);
 }
+#ifdef CONFIG_ARCH_KA2000
+extern void pwm_set(int cmd);
+//extern void force_switch_to_m1(void);
+int kcard_trap_call_back_init = 0;
+kcard_call_back_t kcard_trap_call_back;
 
+void kcard_set_trap_call_back(kcard_call_back_t handler)
+{
+	kcard_trap_call_back = handler;
+	kcard_trap_call_back_init = 1;
+}
+EXPORT_SYMBOL(kcard_set_trap_call_back);
+#endif
 void arm_notify_die(const char *str, struct pt_regs *regs,
 		struct siginfo *info, unsigned long err, unsigned long trap)
 {
@@ -283,7 +296,22 @@ void arm_notify_die(const char *str, struct pt_regs *regs,
 
 		force_sig_info(info->si_signo, info, current);
 	} else {
+#ifdef CONFIG_ARCH_KA2000
+    //force_switch_to_m1();
+    pwm_set(0);
+	UARTC('d'); 
+	UARTC('i');
+	UARTC('e');
+
+		__show_regs(regs);
+		dump_stack();	
+		schedule();
+		if (kcard_trap_call_back_init)
+       		kcard_trap_call_back();
+
+#else
 		die(str, regs, err);
+#endif
 	}
 }
 
@@ -537,18 +565,27 @@ asmlinkage int arm_syscall(int no, struct pt_regs *regs)
 		struct mm_struct *mm = current->mm;
 		pgd_t *pgd; pmd_t *pmd; pte_t *pte;
 		spinlock_t *ptl;
+		int bad = 0;
 
 		regs->ARM_cpsr &= ~PSR_C_BIT;
 		down_read(&mm->mmap_sem);
 		pgd = pgd_offset(mm, addr);
 		if (!pgd_present(*pgd))
+		{
+			bad = 1;
 			goto bad_access;
+		}	
 		pmd = pmd_offset(pgd, addr);
 		if (!pmd_present(*pmd))
+		{
+			bad = 2;
 			goto bad_access;
+		}
+
 		pte = pte_offset_map_lock(mm, pmd, addr, &ptl);
 		if (!pte_present(*pte) || !pte_dirty(*pte)) {
 			pte_unmap_unlock(pte, ptl);
+			bad = 3;
 			goto bad_access;
 		}
 		val = *(unsigned long *)addr;
@@ -564,6 +601,7 @@ asmlinkage int arm_syscall(int no, struct pt_regs *regs)
 		bad_access:
 		up_read(&mm->mmap_sem);
 		/* simulate a write access fault */
+		printk("bad %d, ", bad);
 		do_DataAbort(addr, 15 + (1 << 11), regs);
 	}
 #endif

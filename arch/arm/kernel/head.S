@@ -76,6 +76,17 @@
  */
 	.section ".text.head", "ax"
 ENTRY(stext)
+
+#ifdef CONFIG_KA2000_DECOMPRESS_ENABLE
+#else
+        mov     r0, #0x0
+        
+        mov     r1, #0x5
+        orr     r1, r1, #(0x38 << 4)
+ 
+        mov     r2, #0x100
+#endif
+
 	setmode	PSR_F_BIT | PSR_I_BIT | SVC_MODE, r9 @ ensure svc mode
 						@ and irqs disabled
 	mrc	p15, 0, r9, c0, c0		@ get processor id

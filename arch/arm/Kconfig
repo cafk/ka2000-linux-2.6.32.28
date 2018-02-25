@@ -679,6 +679,17 @@ config ARCH_DAVINCI
 	help
 	  Support for TI's DaVinci platform.
 
+config ARCH_KA2000
+	bool "KeyAsic KA2000EVM"
+	select CPU_ARM926T
+	select ARCH_HAS_CPUFREQ
+	select GENERIC_TIME
+	select GENERIC_CLOCKEVENTS
+	select HAVE_CLK
+	select ZONE_DMA	
+	help
+	  Support for KeyAsic's KA2000 platform.
+
 config ARCH_OMAP
 	bool "TI OMAP"
 	select GENERIC_GPIO
@@ -704,105 +715,9 @@ config ARCH_BCMRING
 
 endchoice
 
-source "arch/arm/mach-clps711x/Kconfig"
 
-source "arch/arm/mach-ep93xx/Kconfig"
+source "arch/arm/mach-ka2000/Kconfig"
 
-source "arch/arm/mach-footbridge/Kconfig"
-
-source "arch/arm/mach-gemini/Kconfig"
-
-source "arch/arm/mach-integrator/Kconfig"
-
-source "arch/arm/mach-iop32x/Kconfig"
-
-source "arch/arm/mach-iop33x/Kconfig"
-
-source "arch/arm/mach-iop13xx/Kconfig"
-
-source "arch/arm/mach-ixp4xx/Kconfig"
-
-source "arch/arm/mach-ixp2000/Kconfig"
-
-source "arch/arm/mach-ixp23xx/Kconfig"
-
-source "arch/arm/mach-loki/Kconfig"
-
-source "arch/arm/mach-mv78xx0/Kconfig"
-
-source "arch/arm/mach-pxa/Kconfig"
-source "arch/arm/plat-pxa/Kconfig"
-
-source "arch/arm/mach-mmp/Kconfig"
-
-source "arch/arm/mach-sa1100/Kconfig"
-
-source "arch/arm/plat-omap/Kconfig"
-
-source "arch/arm/mach-omap1/Kconfig"
-
-source "arch/arm/mach-omap2/Kconfig"
-
-source "arch/arm/mach-orion5x/Kconfig"
-
-source "arch/arm/mach-kirkwood/Kconfig"
-
-source "arch/arm/plat-s3c24xx/Kconfig"
-source "arch/arm/plat-s3c64xx/Kconfig"
-source "arch/arm/plat-s3c/Kconfig"
-source "arch/arm/plat-s5pc1xx/Kconfig"
-
-if ARCH_S3C2410
-source "arch/arm/mach-s3c2400/Kconfig"
-source "arch/arm/mach-s3c2410/Kconfig"
-source "arch/arm/mach-s3c2412/Kconfig"
-source "arch/arm/mach-s3c2440/Kconfig"
-source "arch/arm/mach-s3c2442/Kconfig"
-source "arch/arm/mach-s3c2443/Kconfig"
-endif
-
-if ARCH_S3C64XX
-source "arch/arm/mach-s3c6400/Kconfig"
-source "arch/arm/mach-s3c6410/Kconfig"
-endif
-
-source "arch/arm/plat-stmp3xxx/Kconfig"
-
-if ARCH_S5PC1XX
-source "arch/arm/mach-s5pc100/Kconfig"
-endif
-
-source "arch/arm/mach-lh7a40x/Kconfig"
-
-source "arch/arm/mach-h720x/Kconfig"
-
-source "arch/arm/mach-versatile/Kconfig"
-
-source "arch/arm/mach-aaec2000/Kconfig"
-
-source "arch/arm/mach-realview/Kconfig"
-
-source "arch/arm/mach-at91/Kconfig"
-
-source "arch/arm/plat-mxc/Kconfig"
-
-source "arch/arm/mach-nomadik/Kconfig"
-
-source "arch/arm/mach-netx/Kconfig"
-
-source "arch/arm/mach-ns9xxx/Kconfig"
-
-source "arch/arm/mach-davinci/Kconfig"
-
-source "arch/arm/mach-ks8695/Kconfig"
-
-source "arch/arm/mach-msm/Kconfig"
-
-source "arch/arm/mach-u300/Kconfig"
-
-source "arch/arm/mach-w90x900/Kconfig"
-
-source "arch/arm/mach-bcmring/Kconfig"
 
 # Definitions to make life easier
 config ARCH_ACORN
@@ -1158,7 +1073,7 @@ config LEDS
 		   ARCH_LUBBOCK || MACH_MAINSTONE || ARCH_NETWINDER || \
 		   ARCH_OMAP || ARCH_P720T || ARCH_PXA_IDP || \
 		   ARCH_SA1100 || ARCH_SHARK || ARCH_VERSATILE || \
-		   ARCH_AT91 || ARCH_DAVINCI || \
+		   ARCH_AT91 || ARCH_DAVINCI || ARCH_KA2000 || \
 		   ARCH_KS8695 || MACH_RD88F5182 || ARCH_REALVIEW
 	help
 	  If you say Y here, the LEDs on your machine will be used

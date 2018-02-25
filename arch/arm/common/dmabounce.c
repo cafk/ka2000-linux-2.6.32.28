@@ -80,7 +80,14 @@ struct dmabounce_device_info {
 
 	rwlock_t lock;
 };
-
+#ifdef CONFIG_ARCH_KA2000
+int dma_needs_bounce(struct device *dev, dma_addr_t dma_addr, size_t size)
+{
+	dev_dbg(dev, "%s: dma_addr %08x, size %08x\n",
+		__func__, dma_addr, size);
+	return 1; //((dma_addr + size - PHYS_OFFSET) >= SZ_32M);
+}
+#endif
 #ifdef STATS
 static ssize_t dmabounce_show(struct device *dev, struct device_attribute *attr,
 			      char *buf)

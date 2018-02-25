@@ -192,7 +192,7 @@ static struct tagtable __tagtable_##fn __tag = { tag, fn }
 /*
  * Memory map description
  */
-#ifdef CONFIG_ARCH_LH7A40X
+#ifdef CONFIG_ARCH_KA2000
 # define NR_BANKS 16
 #else
 # define NR_BANKS 8

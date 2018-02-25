@@ -1,0 +1,155 @@
+if ARCH_KA2000
+
+menu "KeyASIC Implementations"
+
+comment "KeyASIC KA2000 Core Type"
+
+config ARCH_KA2000x
+	default y
+	bool "KeyASIC KA2000 based system"
+
+comment "KeyASIC KA2000 Board Type"
+
+config MACH_KA2000_EVM
+	bool "KeyASIC KA2000 EVM"
+	depends on ARCH_KA2000x
+	default y
+
+	help
+	  Configure this option to specify the whether the board used
+	  for development is a KA2000 EVM
+
+config KA2000_KERNEL_ZRELADDR
+	hex "ZRELADDR location for the Kernel"
+	default "0x00208000"
+	help
+	  Provide ZRELADDR location for the kernel. The value should match with
+	  default + SDRAM_OFFSET 0x00208000.
+
+config KA2000_KERNEL_PARAMS_PHYS
+	hex "PARAMS_PHYS location for the Kernel"
+	default "0x00200100"
+	help
+	  Provide PARAMS_PHYS location for the kernel. The value should match
+	  with default + SDRAM_OFFSET 0x00200100.
+
+config KA2000_KERNEL_INITRD_PHYS
+	hex "INITRD_PHYS location"
+	default "0x00400000"
+	help
+	  Provide INITRD_PHYS location for the kernel. The value should match
+	  with default + SDRAM_OFFSET 0x00400000.
+
+config KA2000_CHIP_VERSION
+	hex "KA2000 Chip Version (A,D)"
+    default "A"
+
+config KA2000_PRINTK_ENABLE
+	default y
+	bool "KA2000 Enable Printk"
+
+config KA2000_POWER_SLEEP_ENABLE
+	default n
+	bool "KA2000 Enable Power Sleep after bootup"
+
+config KA2000_DECOMPRESS_ENABLE
+	default y
+	bool "KA2000 Enable COMPRESS"
+
+config KA2000_12M_FPGA_TEST
+	default n
+	bool "KA2000 Set Clock 12MHz for FPGA testing."
+
+
+config KA2000_WITH_RESISTER
+	default y
+	bool "KA2000 Switch driver with resister or not"
+
+config KA2000_PWM_ENABLE
+	default y
+	bool "KA2000 Enable PWM Buzzer"
+
+choice
+	prompt "Customer specified"
+	default KA2000_CUST_NONE
+
+config KA2000_CUST_NONE
+	bool "No specified design."
+	help
+	  No specified or customized design."
+
+config KA2000_CUST_TREK
+	bool "Specified for Trek"
+	help
+	  Specified for Trek.
+endchoice
+
+choice
+	prompt "KA2000 clock setting"
+	depends on !KA2000_CUST_TREK
+	default PLL_CPU_HCLK_192_96_96
+
+config PLL_CPU_HCLK_24_24_24
+    bool "pll_cpu_hclk_24_24_24"
+	help
+	  pll_cpu_hclk_24_24_24
+
+config PLL_CPU_HCLK_96_48_48
+    bool "pll_cpu_hclk_96_48_48"
+	help
+	  pll_cpu_hclk_96_48_48
+
+config PLL_CPU_HCLK_192_96_96
+    bool "pll_cpu_hclk_192_96_96"
+	help
+	  pll_cpu_hclk_192_96_96
+
+config PLL_CPU_HCLK_192_192_96
+    bool "pll_cpu_hclk_192_192_96"
+	help
+	  pll_cpu_hclk_192_192_96
+
+config PLL_CPU_HCLK_96_96_96
+    bool "pll_cpu_hclk_96_96_96"
+	help
+	  pll_cpu_hclk_96_96_96
+
+config PLL_CPU_HCLK_192_48_48
+    bool "pll_cpu_hclk_192_48_48"
+	help
+	  pll_cpu_hclk_192_48_48
+
+config PLL_CPU_HCLK_192_96_48
+    bool "pll_cpu_hclk_192_96_48"
+	help
+	  pll_cpu_hclk_192_96_48
+
+config PLL_CPU_HCLK_192_24_24
+    bool "pll_cpu_hclk_192_24_24"
+	help
+	  pll_cpu_hclk_192_24_24
+
+config PLL_CPU_HCLK_210_210_105
+    bool "pll_cpu_hclk_210_210_105"
+	help
+	  pll_cpu_hclk_210_210_105
+
+config PLL_CPU_HCLK_156_78_78
+    bool "pll_cpu_hclk_156_78_78"
+	help
+	  pll_cpu_hclk_156_78_78
+
+config PLL_CPU_HCLK_12_12_12_FPGA
+    bool "pll_cpu_hclk_12_12_12_FPGA"
+	help
+	  pll_cpu_hclk_12_12_12_FPGA
+
+config PLL_CPU_HCLK_96_96_48
+    bool "pll_cpu_hclk_96_96_48"
+	help
+	  pll_cpu_hclk_96_96_48
+endchoice
+
+endmenu
+
+endif

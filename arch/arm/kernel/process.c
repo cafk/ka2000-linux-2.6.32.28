@@ -119,7 +119,25 @@ EXPORT_SYMBOL(pm_power_off);
 
 void (*arm_pm_restart)(char str, const char *cmd) = arm_machine_restart;
 EXPORT_SYMBOL_GPL(arm_pm_restart);
+#ifdef CONFIG_ARCH_KA2000
+static void arch_idle_ka2000()
+{
+	__asm__ __volatile__ ("mov	r0, #0");
+	__asm__ __volatile__ ("mrc	p15, 0, r1, c1, c0, 0		@ Read control register");
+	__asm__ __volatile__ ("mcr	p15, 0, r0, c7, c10, 4		@ Drain write buffer");
+	__asm__ __volatile__ ("bic	r2, r1, #1 << 12");
+	__asm__ __volatile__ ("mrs	r3, cpsr			@ Disable FIQs while Icache");
+	__asm__ __volatile__ ("orr	ip, r3, #0x00000040		@ is disabled");
+	__asm__ __volatile__ ("msr	cpsr_c, ip");
 
+	//__asm__ __volatile__ ("mcr	p15, 0, r2, c1, c0, 0		@ Disable I cache");
+    //__asm__ __volatile__ ("mcr	p15, 0, r0, c7, c0, 4		@ Wait for interrupt");
+	//__asm__ __volatile__ ("mcr	p15, 0, r1, c1, c0, 0		@ Restore ICache enable");
+
+	__asm__ __volatile__ ("msr	cpsr_c, r3			@ Restore FIQ state");
+	//__asm__ __volatile__ ("mov	pc, lr" ::"r"(0));
+}
+#endif
 
 /*
  * This is our default idle handler.  We need to disable
@@ -127,9 +145,26 @@ EXPORT_SYMBOL_GPL(arm_pm_restart);
  */
 static void default_idle(void)
 {
-	if (!need_resched())
-		arch_idle();
-	local_irq_enable();
+    if (!need_resched())
+    {
+#ifndef CONFIG_ARCH_KA2000
+        arch_idle();
+#else
+        //arch_idle_ka2000();
+        nop();
+#if CONFIG_KA2000_CHIP_VERSION == 0xA
+        nop();
+		nop();
+		nop();
+		nop();
+		nop();
+		nop();
+		nop();
+#endif
+
+#endif
+    }
+    local_irq_enable();
 }
 
 void (*pm_idle)(void) = default_idle;
@@ -143,13 +178,25 @@ EXPORT_SYMBOL(pm_idle);
  */
 void cpu_idle(void)
 {
+#if CONFIG_KA2000_CHIP_VERSION == 0xA
+    int i;
+#endif
 	local_fiq_enable();
+    //printk("cpu_idle\n");
 
 	/* endless idle loop with no priority at all */
 	while (1) {
 		tick_nohz_stop_sched_tick(1);
 		leds_event(led_idle_start);
+#if CONFIG_KA2000_CHIP_VERSION == 0xA
+        i = 0;
 		while (!need_resched()) {
+			i++;
+			if (i > 100)
+				break;
+#else
+		while (!need_resched()) {
+#endif
 #ifdef CONFIG_HOTPLUG_CPU
 			if (cpu_is_offline(smp_processor_id()))
 				cpu_die();
@@ -163,6 +210,7 @@ void cpu_idle(void)
 				stop_critical_timings();
 				pm_idle();
 				start_critical_timings();
+
 				/*
 				 * This will eventually be removed - pm_idle
 				 * functions should always return with IRQs
@@ -170,14 +218,20 @@ void cpu_idle(void)
 				 */
 				WARN_ON(irqs_disabled());
 				local_irq_enable();
+
 			}
 		}
 		leds_event(led_idle_end);
 		tick_nohz_restart_sched_tick();
 		preempt_enable_no_resched();
 		schedule();
+#if 0
+		while (need_resched())
+		schedule();
+#endif
 		preempt_disable();
 	}
+
 }
 
 static char reboot_mode = 'h';

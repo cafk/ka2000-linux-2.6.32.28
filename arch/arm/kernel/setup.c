@@ -681,7 +681,7 @@ static struct init_tags {
 	{ 1, PAGE_SIZE, 0xff },
 	{ tag_size(tag_mem32), ATAG_MEM },
 	{ MEM_SIZE, PHYS_OFFSET },
-	{ 0, ATAG_NONE }
+	//{ 0, ATAG_NONE }
 };
 
 static void (*init_machine)(void) __initdata;
@@ -709,7 +709,9 @@ void __init setup_arch(char **cmdline_p)
 
 	if (mdesc->soft_reboot)
 		reboot_setup("s");
-
+#ifdef CONFIG_ARCH_KA2000
+	tags = (struct tag *)&init_tags;
+#else
 	if (__atags_pointer)
 		tags = phys_to_virt(__atags_pointer);
 	else if (mdesc->boot_params)
@@ -723,7 +725,7 @@ void __init setup_arch(char **cmdline_p)
 		convert_to_tag_list(tags);
 	if (tags->hdr.tag != ATAG_CORE)
 		tags = (struct tag *)&init_tags;
-
+#endif
 	if (mdesc->fixup)
 		mdesc->fixup(mdesc, tags, &from, &meminfo);
 
