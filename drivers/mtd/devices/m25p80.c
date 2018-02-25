@@ -60,7 +60,12 @@
 #define	SR_SRWD			0x80	/* SR write protect */
 
 /* Define max times to check status register before we give up. */
+#ifdef CONFIG_ARCH_KA2000
+#define	MAX_READY_WAIT_JIFFIES	100000	/* M25P16 specs 40s max chip erase */
+#else
 #define	MAX_READY_WAIT_JIFFIES	(40 * HZ)	/* M25P16 specs 40s max chip erase */
+#endif
+
 #define	CMD_SIZE		4
 
 #ifdef CONFIG_M25PXX_USE_FAST_READ
@@ -675,6 +680,14 @@ static struct flash_info __devinitdata m25p_data [] = {
 	{ "w25x16", 0xef3015, 0, 64 * 1024, 32, SECT_4K, },
 	{ "w25x32", 0xef3016, 0, 64 * 1024, 64, SECT_4K, },
 	{ "w25x64", 0xef3017, 0, 64 * 1024, 128, SECT_4K, },
+
+#ifdef CONFIG_ARCH_KA2000
+      	/*	MXIC */
+	{ "MX25L1605D", 0xc22015, 0, 64 * 1024, 32, SECT_4K, },
+	{ "MX25L6405D", 0xc22017, 0, 64 * 1024, 128,  },
+#endif
+
+
 };
 
 static struct flash_info *__devinit jedec_probe(struct spi_device *spi)

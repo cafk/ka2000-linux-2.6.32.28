@@ -13,11 +13,16 @@
 #include <linux/pagemap.h>
 #include <linux/quotaops.h>
 #include <linux/buffer_head.h>
+#include <linux/delay.h>
 #include "internal.h"
 
 #define VALID_FLAGS (SYNC_FILE_RANGE_WAIT_BEFORE|SYNC_FILE_RANGE_WRITE| \
 			SYNC_FILE_RANGE_WAIT_AFTER)
 
+#ifdef CONFIG_ARCH_KA2000
+int syncing = 0;
+EXPORT_SYMBOL(syncing);
+#endif
 /*
  * Do the filesystem syncing work. For simple filesystems
  * writeback_inodes_sb(sb) just dirties buffers with inodes so we have to
@@ -109,7 +114,13 @@ restart:
 
 		down_read(&sb->s_umount);
 		if (!(sb->s_flags & MS_RDONLY) && sb->s_root && sb->s_bdi)
+		{
 			__sync_filesystem(sb, wait);
+
+#if 0//def CONFIG_ARCH_KA2000
+                schedule_timeout(40);
+#endif
+		}		
 		up_read(&sb->s_umount);
 
 		/* restart only when sb is no longer on the list */
@@ -127,11 +138,17 @@ restart:
  */
 SYSCALL_DEFINE0(sync)
 {
+#ifdef CONFIG_ARCH_KA2000
+	syncing = 1;
+#endif
 	wakeup_flusher_threads(0);
 	sync_filesystems(0);
 	sync_filesystems(1);
 	if (unlikely(laptop_mode))
 		laptop_sync_completion();
+#ifdef CONFIG_ARCH_KA2000
+	syncing = 0;
+#endif
 	return 0;
 }
 

@@ -17,6 +17,13 @@
 #include <mtd/mtd-abi.h>
 
 #include <asm/div64.h>
+#ifndef CONFIG_KA2000_PRINTK_ENABLE
+#define printk dprintk
+static inline int dprintk(const char *fmt, ...)
+{
+      return 0;
+}
+#endif
 
 #define MTD_CHAR_MAJOR 90
 #define MTD_BLOCK_MAJOR 31

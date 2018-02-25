@@ -36,6 +36,10 @@
 
 #include <asm/uaccess.h>
 
+#ifndef CONFIG_KA2000_PRINTK_ENABLE
+#define KA2000_DISABLE_PRINTK
+#endif
+
 /*
  * for_each_console() allows you to iterate on each console
  */
@@ -588,6 +592,7 @@ static int have_callable_console(void)
 
 asmlinkage int printk(const char *fmt, ...)
 {
+#ifndef KA2000_DISABLE_PRINTK
 	va_list args;
 	int r;
 
@@ -596,6 +601,11 @@ asmlinkage int printk(const char *fmt, ...)
 	va_end(args);
 
 	return r;
+#else
+    //mdelay(1);
+    //touch_nmi_watchdog();
+    return 0;
+#endif
 }
 
 /* cpu currently holding logbuf_lock */
@@ -708,8 +718,10 @@ asmlinkage int vprintk(const char *fmt, va_list args)
 	if (recursion_bug) {
 		recursion_bug = 0;
 		strcpy(printk_buf, recursion_bug_msg);
+		nop();
 		printed_len = strlen(recursion_bug_msg);
 	}
+	nop();
 	/* Emit the output into the temporary buffer */
 	printed_len += vscnprintf(printk_buf + printed_len,
 				  sizeof(printk_buf) - printed_len, fmt, args);
@@ -782,7 +794,7 @@ asmlinkage int vprintk(const char *fmt, va_list args)
 	 * Try to acquire and then immediately release the
 	 * console semaphore. The release will do all the
 	 * actual magic (print out buffers, wake up klogd,
-	 * etc). 
+	 * etc).
 	 *
 	 * The acquire_console_semaphore_for_printk() function
 	 * will release 'logbuf_lock' regardless of whether it

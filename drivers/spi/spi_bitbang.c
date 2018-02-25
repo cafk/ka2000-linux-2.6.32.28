@@ -266,7 +266,11 @@ static void bitbang_work(struct work_struct *work)
 
 	spin_lock_irqsave(&bitbang->lock, flags);
 	bitbang->busy = 1;
-	while (!list_empty(&bitbang->queue)) {
+#ifdef CONFIG_ARCH_KA2000
+       if (!list_empty(&bitbang->queue)) { 
+#else	
+        while (!list_empty(&bitbang->queue)) {
+#endif
 		struct spi_message	*m;
 		struct spi_device	*spi;
 		unsigned		nsecs;
@@ -384,6 +388,12 @@ static void bitbang_work(struct work_struct *work)
 		spin_lock_irqsave(&bitbang->lock, flags);
 	}
 	bitbang->busy = 0;
+#ifdef CONFIG_ARCH_KA2000
+        if (!list_empty(&bitbang->queue))
+	{
+	    queue_work(bitbang->workqueue, &bitbang->work);
+	}
+#endif
 	spin_unlock_irqrestore(&bitbang->lock, flags);
 }
 

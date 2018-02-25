@@ -1082,7 +1082,10 @@ error:
 	return err;
 }
 
-int fat_alloc_new_dir(struct inode *dir, struct timespec *ts)
+#ifdef CONFIG_ARCH_KA2000
+int fat_alloc_clusters_org(struct inode *inode, int *cluster, int nr_cluster);
+#endif
+int fat_alloc_new_dir(struct inode *dir, struct timespec *ts, int flag)
 {
 	struct super_block *sb = dir->i_sb;
 	struct msdos_sb_info *sbi = MSDOS_SB(sb);
@@ -1092,8 +1095,13 @@ int fat_alloc_new_dir(struct inode *dir, struct timespec *ts)
 	__le16 date, time;
 	u8 time_cs;
 	int err, cluster;
-
-	err = fat_alloc_clusters(dir, &cluster, 1);
+#ifdef CONFIG_ARCH_KA2000
+	printk("fat_alloc_new_dir %d\n", flag);
+	if (flag == 1)  // is DCIM folder
+		err = fat_alloc_clusters_org(dir, &cluster, 1);
+	else
+#endif
+		err = fat_alloc_clusters(dir, &cluster, 1);
 	if (err)
 		goto error;
 
@@ -1238,6 +1246,7 @@ int fat_add_entries(struct inode *dir, void *slots, int nr_slots,
 	loff_t pos, i_pos;
 
 	sinfo->nr_slots = nr_slots;
+	//printk("%s, %d\n", __FUNCTION__, __LINE__); //ka2000_fat_dbg
 
 	/* First stage: search free direcotry entries */
 	free_slots = nr_bhs = 0;

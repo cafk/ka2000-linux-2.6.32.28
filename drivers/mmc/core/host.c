@@ -55,6 +55,7 @@ static DEFINE_SPINLOCK(mmc_host_lock);
  *
  *	Initialise the per-host structure.
  */
+ void ka2000_dma_flush_all();
 struct mmc_host *mmc_alloc_host(int extra, struct device *dev)
 {
 	int err;
@@ -65,8 +66,13 @@ struct mmc_host *mmc_alloc_host(int extra, struct device *dev)
 
 	host = kzalloc(sizeof(struct mmc_host) + extra, GFP_KERNEL);
 	if (!host)
+	{
+		printk("mmc_alloc_host NULL\n");
 		return NULL;
+	}
 
+	//printk("mmc_alloc_host %p\n", host);
+	
 	spin_lock(&mmc_host_lock);
 	err = idr_get_new(&mmc_host_idr, host, &host->index);
 	spin_unlock(&mmc_host_lock);

@@ -73,7 +73,7 @@ int mmc_wait_for_app_cmd(struct mmc_host *host, struct mmc_card *card,
 	BUG_ON(retries < 0);
 
 	err = -EIO;
-
+    udelay(1);
 	/*
 	 * We have to resend MMC_APP_CMD for each attempt so
 	 * we cannot use the retries field in mmc_command.

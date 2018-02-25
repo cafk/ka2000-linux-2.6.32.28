@@ -156,8 +156,12 @@ struct mmc_host {
 	unsigned int		max_seg_size;	/* see blk_queue_max_segment_size */
 	unsigned short		max_hw_segs;	/* see blk_queue_max_hw_segments */
 	unsigned short		max_phys_segs;	/* see blk_queue_max_phys_segments */
+#ifdef CONFIG_ARCH_KA2000
+	unsigned short		sdio_type;
+#else
 	unsigned short		unused;
-	unsigned int		max_req_size;	/* maximum number of bytes in one req */
+#endif	
+        unsigned int		max_req_size;	/* maximum number of bytes in one req */
 	unsigned int		max_blk_size;	/* maximum size of one mmc block */
 	unsigned int		max_blk_count;	/* maximum number of blocks in one req */
 

@@ -20,6 +20,13 @@
 extern int version_string(LINUX_VERSION_CODE);
 int version_string(LINUX_VERSION_CODE);
 #endif
+#ifndef CONFIG_KA2000_PRINTK_ENABLE
+#define printk dprintk
+static inline int dprintk(const char *fmt, ...)
+{
+      return 0;
+}
+#endif
 
 struct uts_namespace init_uts_ns = {
 	.kref = {

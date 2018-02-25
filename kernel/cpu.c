@@ -15,6 +15,13 @@
 #include <linux/stop_machine.h>
 #include <linux/mutex.h>
 
+#ifndef CONFIG_KA2000_PRINTK_ENABLE
+#define printk dprintk
+static inline int dprintk(const char *fmt, ...)
+{
+      return 0;
+}
+#endif
 #ifdef CONFIG_SMP
 /* Serializes the updates to cpu_online_mask, cpu_present_mask */
 static DEFINE_MUTEX(cpu_add_remove_lock);

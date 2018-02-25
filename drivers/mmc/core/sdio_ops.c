@@ -19,6 +19,24 @@
 #include "core.h"
 #include "sdio_ops.h"
 
+//#define DEBUG_CMD52_KA2002
+//#define DEBUG_CMD53_KA2000
+
+
+
+static  void dump_buffer(unsigned char *buf, int count)
+{
+    int i;
+    printk("\n--------------------------------------------------------\n");
+    for (i = 0; i < count; i++)
+    {
+        printk("%02X ", buf[i]);
+        if ((i & 0xf) == 0xf)
+            printk("\n");
+    }
+    printk("\n\n");
+}
+
 int mmc_send_io_op_cond(struct mmc_host *host, u32 ocr, u32 *rocr)
 {
 	struct mmc_command cmd;
@@ -67,6 +85,8 @@ int mmc_send_io_op_cond(struct mmc_host *host, u32 ocr, u32 *rocr)
 	return err;
 }
 
+int sdio_busy = 0;
+
 int mmc_io_rw_direct(struct mmc_card *card, int write, unsigned fn,
 	unsigned addr, u8 in, u8* out)
 {
@@ -75,7 +95,8 @@ int mmc_io_rw_direct(struct mmc_card *card, int write, unsigned fn,
 
 	BUG_ON(!card);
 	BUG_ON(fn > 7);
-
+    if (sdio_busy)
+        printk("sdio_busy\n");
 	/* sanity check */
 	if (addr & ~0x1FFFF)
 		return -EINVAL;
@@ -91,6 +112,15 @@ int mmc_io_rw_direct(struct mmc_card *card, int write, unsigned fn,
 	cmd.flags = MMC_RSP_SPI_R5 | MMC_RSP_R5 | MMC_CMD_AC;
 
 	err = mmc_wait_for_cmd(card->host, &cmd, 0);
+
+#ifdef DEBUG_CMD52_KA2002
+    if (write)
+        printk("W cmd%2d, %x, fn %d, in %d, %02X\n", cmd.opcode, addr, fn, in, cmd.resp[0] & 0xff);
+    else
+        printk("R cmd%2d, %x, fn %d, in %d, %02X\n", cmd.opcode, addr, fn, in, cmd.resp[0] & 0xff);
+#endif
+
+
 	if (err)
 		return err;
 
@@ -115,6 +145,7 @@ int mmc_io_rw_direct(struct mmc_card *card, int write, unsigned fn,
 	return 0;
 }
 
+
 int mmc_io_rw_extended(struct mmc_card *card, int write, unsigned fn,
 	unsigned addr, int incr_addr, u8 *buf, unsigned blocks, unsigned blksz)
 {
@@ -132,7 +163,7 @@ int mmc_io_rw_extended(struct mmc_card *card, int write, unsigned fn,
 	/* sanity check */
 	if (addr & ~0x1FFFF)
 		return -EINVAL;
-
+	
 	memset(&mrq, 0, sizeof(struct mmc_request));
 	memset(&cmd, 0, sizeof(struct mmc_command));
 	memset(&data, 0, sizeof(struct mmc_data));
@@ -151,17 +182,48 @@ int mmc_io_rw_extended(struct mmc_card *card, int write, unsigned fn,
 		cmd.arg |= 0x08000000 | blocks;		/* block mode */
 	cmd.flags = MMC_RSP_SPI_R5 | MMC_RSP_R5 | MMC_CMD_ADTC;
 
+#ifdef DEBUG_CMD53_KA2000
+    u32 trace_cmd = buf[4] == 0xd1 && blksz == 256 && blocks == 1;
+    if (blocks == 1 && blksz <256)
+    {
+        if (write)
+       {
+
+           //if (trace_cmd)
+                printk("W%2x,s%d,b%d...\n", buf[4], blksz, blocks, fn, incr_addr);
+       }
+        else
+            printk("R%2x,s%d,b%d...\n", buf[4], blksz, blocks, fn, incr_addr);
+    }
+    else
+        printk(".");
+
+#endif
+
 	data.blksz = blksz;
 	data.blocks = blocks;
 	data.flags = write ? MMC_DATA_WRITE : MMC_DATA_READ;
 	data.sg = &sg;
 	data.sg_len = 1;
-
+//printk("sg.buf %p\n", buf);
 	sg_init_one(&sg, buf, blksz * blocks);
 
 	mmc_set_data_timeout(&data, card);
-
 	mmc_wait_for_req(card->host, &mrq);
+
+
+    if (cmd.error || data.error)
+    {
+        printk("cmd err %d, data.err %d, resp[0] %x\n", cmd.error, data.error, cmd.resp[0]);
+    }
+
+#ifdef DEBUG_CMD53_KA2000
+    if (!write)
+    {
+        printk("Cmd%x, r %x\n", buf[4], cmd.resp[0]);
+        //dump_buffer(buf, blksz);
+    }
+#endif
 
 	if (cmd.error)
 		return cmd.error;

@@ -85,6 +85,7 @@ static inline void sg_assign_page(struct scatterlist *sg, struct page *page)
 static inline void sg_set_page(struct scatterlist *sg, struct page *page,
 			       unsigned int len, unsigned int offset)
 {
+	//printk("sg_set_page sg%p, page %p, %x, %d,", sg, page, offset, len);
 	sg_assign_page(sg, page);
 	sg->offset = offset;
 	sg->length = len;

@@ -28,6 +28,13 @@
 #include <scsi/sg.h>		/* for struct sg_iovec */
 
 #include <trace/events/block.h>
+#ifndef CONFIG_KA2000_PRINTK_ENABLE
+#define printk dprintk
+static inline int dprintk(const char *fmt, ...)
+{
+      return 0;
+}
+#endif
 
 /*
  * Test patch to inline a certain number of bi_io_vec's inside the bio

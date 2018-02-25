@@ -451,7 +451,9 @@ static void fat_collect_bhs(struct buffer_head **bhs, int *nr_bhs,
 		}
 	}
 }
-
+#ifdef CONFIG_ARCH_KA2000
+/*volatile*/ int m=0;
+#endif
 int fat_alloc_clusters(struct inode *inode, int *cluster, int nr_cluster)
 {
 	struct super_block *sb = inode->i_sb;
@@ -459,8 +461,12 @@ int fat_alloc_clusters(struct inode *inode, int *cluster, int nr_cluster)
 	struct fatent_operations *ops = sbi->fatent_ops;
 	struct fat_entry fatent, prev_ent;
 	struct buffer_head *bhs[MAX_BUF_PER_PAGE];
+#ifdef CONFIG_ARCH_KA2000
+	int i, count, err, nr_bhs, idx_clus, e=0;
+	unsigned int offset = 1024 * 1024 * 1024 / sbi->cluster_size;
+#else
 	int i, count, err, nr_bhs, idx_clus;
-
+#endif
 	BUG_ON(nr_cluster > (MAX_BUF_PER_PAGE / 2));	/* fixed limit */
 
 	lock_fat(sbi);
@@ -474,10 +480,29 @@ int fat_alloc_clusters(struct inode *inode, int *cluster, int nr_cluster)
 	count = FAT_START_ENT;
 	fatent_init(&prev_ent);
 	fatent_init(&fatent);
+
+#ifdef CONFIG_ARCH_KA2000
+	e = sbi->max_cluster - offset - m;
+	if(sbi->prev_free < e) {
+	        //if(e % 128)
+	        //       e = (((int)(e / 128) + 1) * 128);
+                fatent_set_entry(&fatent, e);
+	}
+        else
+                fatent_set_entry(&fatent, sbi->prev_free + 1);
+#else
 	fatent_set_entry(&fatent, sbi->prev_free + 1);
+#endif
 	while (count < sbi->max_cluster) {
-		if (fatent.entry >= sbi->max_cluster)
+		if (fatent.entry >= sbi->max_cluster) {
+#ifdef CONFIG_ARCH_KA2000
+			m += offset;
+			fatent.entry = sbi->max_cluster - offset - m;
+			printk("new:%x (m=%d)\n", fatent.entry, m);
+#else
 			fatent.entry = FAT_START_ENT;
+#endif
+		}
 		fatent_set_entry(&fatent, fatent.entry);
 		err = fat_ent_read_block(sb, &fatent);
 		if (err)
@@ -541,6 +566,109 @@ out:
 	return err;
 }
 
+#ifdef CONFIG_ARCH_KA2000
+#define word_read(a)  	    __raw_readl(IO_ADDRESS(a))
+#define is_m1_cmd38()       (word_read(0xa000a1e4) & 0x43)
+int fat_alloc_clusters_org(struct inode *inode, int *cluster, int nr_cluster)
+{
+	struct super_block *sb = inode->i_sb;
+	struct msdos_sb_info *sbi = MSDOS_SB(sb);
+	struct fatent_operations *ops = sbi->fatent_ops;
+	struct fat_entry fatent, prev_ent;
+	struct buffer_head *bhs[MAX_BUF_PER_PAGE];
+	int i, count, err, nr_bhs, idx_clus;
+
+	BUG_ON(nr_cluster > (MAX_BUF_PER_PAGE / 2));	/* fixed limit */
+	if (is_m1_cmd38() &&
+		(word_read(0xa000a0c4) < (sbi->max_cluster * sbi->sec_per_clus - 1))) {
+		printk("cmd38 skip\n");
+		return -EBUSY;
+	}
+
+	lock_fat(sbi);
+	if (sbi->free_clusters != -1 && sbi->free_clus_valid &&
+	    sbi->free_clusters < nr_cluster) {
+		unlock_fat(sbi);
+		return -ENOSPC;
+	}
+
+	err = nr_bhs = idx_clus = 0;
+	count = FAT_START_ENT;
+	fatent_init(&prev_ent);
+	fatent_init(&fatent);
+	
+	sbi->prev_free = FAT_START_ENT;
+	
+	fatent_set_entry(&fatent, sbi->prev_free + 1);
+
+	while (count < sbi->max_cluster) {
+		if (fatent.entry >= sbi->max_cluster) {
+			fatent.entry = FAT_START_ENT;
+		}
+		fatent_set_entry(&fatent, fatent.entry);
+		err = fat_ent_read_block(sb, &fatent);
+		if (err)
+			goto out;
+
+		/* Find the free entries in a block */
+		do {
+			if (ops->ent_get(&fatent) == FAT_ENT_FREE) {
+				int entry = fatent.entry;
+
+				/* make the cluster chain */
+				ops->ent_put(&fatent, FAT_ENT_EOF);
+				if (prev_ent.nr_bhs)
+					ops->ent_put(&prev_ent, entry);
+
+				fat_collect_bhs(bhs, &nr_bhs, &fatent);
+
+				sbi->prev_free = entry;
+				if (sbi->free_clusters != -1)
+					sbi->free_clusters--;
+				sb->s_dirt = 1;
+
+				cluster[idx_clus] = entry;
+				idx_clus++;
+				if (idx_clus == nr_cluster)
+					goto out;
+
+				/*
+				 * fat_collect_bhs() gets ref-count of bhs,
+				 * so we can still use the prev_ent.
+				 */
+				prev_ent = fatent;
+			}
+			count++;
+			if (count == sbi->max_cluster)
+				break;
+		} while (fat_ent_next(sbi, &fatent));
+	}
+
+	/* Couldn't allocate the free entries */
+	sbi->free_clusters = 0;
+	sbi->free_clus_valid = 1;
+	sb->s_dirt = 1;
+	err = -ENOSPC;
+
+out:
+	unlock_fat(sbi);
+	fatent_brelse(&fatent);
+	if (!err) {
+		if (inode_needs_sync(inode))
+			err = fat_sync_bhs(bhs, nr_bhs);
+		if (!err)
+			err = fat_mirror_bhs(sb, bhs, nr_bhs);
+	}
+	for (i = 0; i < nr_bhs; i++)
+		brelse(bhs[i]);
+
+	if (err && idx_clus)
+		fat_free_clusters(inode, cluster[0]);
+
+	return err;
+}
+#endif
+
 int fat_free_clusters(struct inode *inode, int cluster)
 {
 	struct super_block *sb = inode->i_sb;
@@ -562,11 +690,13 @@ int fat_free_clusters(struct inode *inode, int cluster)
 		} else if (cluster == FAT_ENT_FREE) {
 			fat_fs_error(sb, "%s: deleting FAT entry beyond EOF",
 				     __func__);
+#ifndef CONFIG_ARCH_KA2000
 			err = -EIO;
+#endif
 			goto error;
 		}
 
-		/* 
+		/*
 		 * Issue discard for the sectors we no longer care about,
 		 * batching contiguous clusters into one request
 		 */

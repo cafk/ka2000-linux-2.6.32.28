@@ -6,7 +6,7 @@
  *  GK 2/5/95  -  Changed to support mounting root fs via NFS
  *  Added initrd & change_root: Werner Almesberger & Hans Lermen, Feb '96
  *  Moan early if gcc is old, avoiding bogus kernels - Paul Gortmaker, May '96
- *  Simplified starting of init:  Michael A. Griffith <grif@acm.org> 
+ *  Simplified starting of init:  Michael A. Griffith <grif@acm.org>
  */
 
 #include <linux/types.h>
@@ -80,6 +80,7 @@
 #ifdef CONFIG_X86_LOCAL_APIC
 #include <asm/smp.h>
 #endif
+#define UARTC(ch);	*(volatile u32 __force *) (0x55000000 + 0xa0004000) = (ch);
 
 static int kernel_init(void *);
 
@@ -741,7 +742,9 @@ int do_one_initcall(initcall_t fn)
 	if (msgbuf[0]) {
 		printk("initcall %pF returned with %s\n", fn, msgbuf);
 	}
-
+/*#ifdef CONFIG_ARCH_KA2000
+    mdelay(1);
+#endif*/
 	return ret.result;
 }
 

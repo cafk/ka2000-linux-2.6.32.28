@@ -119,6 +119,13 @@
 #include	<asm/cacheflush.h>
 #include	<asm/tlbflush.h>
 #include	<asm/page.h>
+#ifndef CONFIG_KA2000_PRINTK_ENABLE
+#define printk dprintk
+static inline int dprintk(const char *fmt, ...)
+{
+      return 0;
+}
+#endif
 
 /*
  * DEBUG	- 1 for kmem_cache_create() to honour; SLAB_RED_ZONE & SLAB_POISON.

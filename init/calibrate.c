@@ -162,6 +162,8 @@ void __cpuinit calibrate_delay(void)
 		 */
 		loops_per_jiffy >>= 1;
 		loopbit = loops_per_jiffy;
+
+#if  1 
 		while (lps_precision-- && (loopbit >>= 1)) {
 			loops_per_jiffy |= loopbit;
 			ticks = jiffies;
@@ -172,6 +174,9 @@ void __cpuinit calibrate_delay(void)
 			if (jiffies != ticks)	/* longer than 1 tick */
 				loops_per_jiffy &= ~loopbit;
 		}
+#else
+                 loops_per_jiffy = 2105344;
+#endif
 	}
 	if (!printed)
 		pr_cont("%lu.%02lu BogoMIPS (lpj=%lu)\n",

@@ -380,7 +380,11 @@ static int msdos_mkdir(struct inode *dir, struct dentry *dentry, int mode)
 	}
 
 	ts = CURRENT_TIME_SEC;
-	cluster = fat_alloc_new_dir(dir, &ts);
+#ifdef CONFIG_ARCH_KA2000
+	cluster = fat_alloc_new_dir(dir, &ts, 0);
+#else
+		cluster = fat_alloc_new_dir(dir, &ts);
+#endif
 	if (cluster < 0) {
 		err = cluster;
 		goto out;

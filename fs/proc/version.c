@@ -11,6 +11,9 @@ static int version_proc_show(struct seq_file *m, void *v)
 		utsname()->sysname,
 		utsname()->release,
 		utsname()->version);
+#ifdef CONFIG_ARCH_KA2000
+	seq_printf(m, "KA Revision: %s\n", "497");
+#endif
 	return 0;
 }
 

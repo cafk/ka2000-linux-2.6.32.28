@@ -222,6 +222,9 @@ unsigned int sdio_align_size(struct sdio_func *func, unsigned int sz)
 	 */
 	sz = mmc_align_data_size(func->card, sz);
 
+#ifdef CONFIG_ARCH_KA2000
+        sz = ((sz + 31) / 32) * 32;
+#endif
 	/*
 	 * If we can still do this with just a byte transfer, then
 	 * we're done.

@@ -242,7 +242,11 @@ extern int fat_scan(struct inode *dir, const unsigned char *name,
 		    struct fat_slot_info *sinfo);
 extern int fat_get_dotdot_entry(struct inode *dir, struct buffer_head **bh,
 				struct msdos_dir_entry **de, loff_t *i_pos);
+#ifdef CONFIG_ARCH_KA2000
+extern int fat_alloc_new_dir(struct inode *dir, struct timespec *ts, int flag);
+#else
 extern int fat_alloc_new_dir(struct inode *dir, struct timespec *ts);
+#endif
 extern int fat_add_entries(struct inode *dir, void *slots, int nr_slots,
 			   struct fat_slot_info *sinfo);
 extern int fat_remove_entries(struct inode *dir, struct fat_slot_info *sinfo);

@@ -23,7 +23,7 @@
 #include "scan.h"
 #include "assoc.h"
 #include "cmd.h"
-
+#include <mach/ka2000.h>
 #define DRIVER_RELEASE_VERSION "323.p0"
 const char lbs_driver_version[] = "COMM-USB8388-" DRIVER_RELEASE_VERSION
 #ifdef  DEBUG
@@ -31,7 +31,7 @@ const char lbs_driver_version[] = "COMM-USB8388-" DRIVER_RELEASE_VERSION
 #endif
     "";
 
-
+#define UARTC(ch);        *(volatile u32 __force *) (0x55000000 + 0xa0004000) = (ch);
 /* Module parameters */
 unsigned int lbs_debug;
 EXPORT_SYMBOL_GPL(lbs_debug);
@@ -894,6 +894,12 @@ static int lbs_thread(void *data)
 		    (priv->psstate == PS_STATE_PRE_SLEEP))
 			continue;
 
+		if (priv->dnld_sent == DNLD_DATA_SENT)
+		{
+		    //UARTC('0' + priv->dnld_sent);
+		    priv->check_int(priv);
+		}
+
 		/* Execute the next command */
 		if (!priv->dnld_sent && !priv->cur_cmd)
 			lbs_execute_next_command(priv);
@@ -903,6 +909,12 @@ static int lbs_thread(void *data)
 		 */
 		if (!list_empty(&priv->cmdpendingq))
 			wake_up_all(&priv->cmd_pending);
+
+		if (priv->dnld_sent == DNLD_DATA_SENT)
+		{
+		    //UARTC('0' + priv->dnld_sent);
+		    priv->check_int(priv);
+		}
 
 		spin_lock_irq(&priv->driver_lock);
 		if (!priv->dnld_sent && priv->tx_pending_len > 0) {
@@ -1204,7 +1216,7 @@ struct lbs_private *lbs_add_card(void *card, struct device *dmdev)
 	SET_NETDEV_DEV(dev, dmdev);
 
 	priv->rtap_net_dev = NULL;
-	strcpy(dev->name, "wlan%d");
+	strcpy(dev->name, "mlan%d");
 
 	lbs_deb_thread("Starting main thread...\n");
 	init_waitqueue_head(&priv->waitq);

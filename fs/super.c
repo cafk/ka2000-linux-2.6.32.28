@@ -185,10 +185,18 @@ void put_super(struct super_block *sb)
  *	tell fs driver to shut it down and drop the temporary reference we
  *	had just acquired.
  */
+#ifdef CONFIG_ARCH_KA2000
+int umounting=0;
+#endif
 void deactivate_super(struct super_block *s)
 {
 	struct file_system_type *fs = s->s_type;
 	if (atomic_dec_and_lock(&s->s_active, &sb_lock)) {
+
+#ifdef CONFIG_ARCH_KA2000
+                umounting=1;
+#endif
+
 		s->s_count -= S_BIAS-1;
 		spin_unlock(&sb_lock);
 		vfs_dq_off(s, 0);
@@ -196,8 +204,14 @@ void deactivate_super(struct super_block *s)
 		fs->kill_sb(s);
 		put_filesystem(fs);
 		put_super(s);
+#ifdef CONFIG_ARCH_KA2000
+                umounting=0;
+#endif
 	}
 }
+#ifdef CONFIG_ARCH_KA2000
+EXPORT_SYMBOL(umounting);
+#endif
 
 EXPORT_SYMBOL(deactivate_super);
 

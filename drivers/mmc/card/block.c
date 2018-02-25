@@ -20,7 +20,7 @@
 #include <linux/moduleparam.h>
 #include <linux/module.h>
 #include <linux/init.h>
-
+#include <linux/version.h>
 #include <linux/kernel.h>
 #include <linux/fs.h>
 #include <linux/errno.h>
@@ -40,6 +40,9 @@
 #include <asm/uaccess.h>
 
 #include "queue.h"
+#ifdef CONFIG_SDSWITCH_KA2000
+#include <mach/ka2000_define.h>
+#endif
 
 MODULE_ALIAS("mmc:block");
 
@@ -184,6 +187,9 @@ static u32 mmc_sd_num_wr_blocks(struct mmc_card *card)
 
 	memset(&data, 0, sizeof(struct mmc_data));
 
+#ifdef CONFIG_ARCH_KA2000
+        if(card->host->sdio_type == 1){
+#endif
 	data.timeout_ns = card->csd.tacc_ns * 100;
 	data.timeout_clks = card->csd.tacc_clks * 100;
 
@@ -195,7 +201,24 @@ static u32 mmc_sd_num_wr_blocks(struct mmc_card *card)
 		data.timeout_ns = 100000000;
 		data.timeout_clks = 0;
 	}
+#ifdef CONFIG_ARCH_KA2000
+        }
+        else
+	{
+           data.timeout_ns = 0x7fffffff; //card->csd.tacc_ns * 100;
+           data.timeout_clks = 1; //card->csd.tacc_clks * 100;
 
+           timeout_us = data.timeout_ns / 1000;
+           timeout_us += data.timeout_clks * 1000 /
+               (card->host->ios.clock / 1000);
+
+            /*
+              if (timeout_us > 100000) {
+                data.timeout_ns = 100000000;
+                data.timeout_clks = 0;
+            }*/
+	}
+#endif
 	data.blksz = 4;
 	data.blocks = 1;
 	data.flags = MMC_DATA_READ;
@@ -223,7 +246,6 @@ static u32 mmc_sd_num_wr_blocks(struct mmc_card *card)
 
 	return result;
 }
-
 static u32 get_card_status(struct mmc_card *card, struct request *req)
 {
 	struct mmc_command cmd;
@@ -266,7 +288,13 @@ static int mmc_blk_issue_rq(struct mmc_queue *mq, struct request *req)
 		brq.stop.opcode = MMC_STOP_TRANSMISSION;
 		brq.stop.arg = 0;
 		brq.stop.flags = MMC_RSP_SPI_R1B | MMC_RSP_R1B | MMC_CMD_AC;
-		brq.data.blocks = blk_rq_sectors(req);
+
+#if LINUX_VERSION_CODE > KERNEL_VERSION(2,6,28)
+        brq.data.blocks = blk_rq_sectors(req);
+#else
+        brq.data.blocks = req->nr_sectors;
+#endif
+
 
 		/*
 		 * The block layer doesn't support all sector count

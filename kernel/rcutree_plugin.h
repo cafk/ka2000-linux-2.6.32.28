@@ -24,6 +24,13 @@
  *	   Paul E. McKenney <paulmck@linux.vnet.ibm.com>
  */
 
+#ifndef CONFIG_KA2000_PRINTK_ENABLE
+#define printk dprintk
+static inline int dprintk(const char *fmt, ...)
+{
+      return 0;
+}
+#endif
 
 #ifdef CONFIG_TREE_PREEMPT_RCU
 

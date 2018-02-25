@@ -38,12 +38,25 @@ void mmc_set_timing(struct mmc_host *host, unsigned int timing);
 
 static inline void mmc_delay(unsigned int ms)
 {
+#ifdef CONFIG_ARCH_KA2000
+    int i,j;
+#endif
+
 	if (ms < 1000 / HZ) {
 		cond_resched();
 		mdelay(ms);
 	} else {
 		msleep(ms);
 	}
+
+#ifdef CONFIG_ARCH_KA2000
+        for(i=0; i<ms; i++)
+        {
+            j++;
+            nop();
+        }
+
+#endif
 }
 
 void mmc_rescan(struct work_struct *work);

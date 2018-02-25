@@ -7,13 +7,16 @@
  *	of inode number.
  *  May 1999. AV. Fixed the bogosity with FAT32 (read "FAT28"). Fscking lusers.
  */
+#include <linux/kernel.h>
+#include <linux/init.h>
+#include <linux/module.h>
 
 #include <linux/fs.h>
 #include <linux/buffer_head.h>
 #include "fat.h"
 
 /* this must be > 0. */
-#define FAT_MAX_CACHE	8
+#define FAT_MAX_CACHE	64 //8
 
 struct fat_cache {
 	struct list_head cache_list;
@@ -29,6 +32,7 @@ struct fat_cache_id {
 	int dcluster;
 };
 
+static int fat_cache_enable = 1;
 static inline int fat_max_cache(struct inode *inode)
 {
 	return FAT_MAX_CACHE;
@@ -85,6 +89,9 @@ static int fat_cache_lookup(struct inode *inode, int fclus,
 
 	struct fat_cache *hit = &nohit, *p;
 	int offset = -1;
+	//printk("fat_cache_lookup %x\n", fclus);
+	if (fat_cache_enable == 0)
+		return -1;
 
 	spin_lock(&MSDOS_I(inode)->cache_lru_lock);
 	list_for_each_entry(p, &MSDOS_I(inode)->cache_lru, cache_list) {
@@ -340,3 +347,14 @@ int fat_bmap(struct inode *inode, sector_t sector, sector_t *phys,
 	}
 	return 0;
 }
+
+int fat_cache_set_enable(int enabled)
+{
+	//printk("fat_cache_set_enable %d\n", enabled);
+	fat_cache_enable = enabled;
+	return 0;
+}
+
+EXPORT_SYMBOL(fat_cache_set_enable);
+
+

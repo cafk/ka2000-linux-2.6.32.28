@@ -316,7 +316,8 @@ static int mmc_init_card(struct mmc_host *host, u32 ocr,
 	 * state.  We wait 1ms to give cards time to
 	 * respond.
 	 */
-	mmc_go_idle(host);
+#ifndef  CONFIG_SDSWITCH_KA2000	
+         mmc_go_idle(host);
 
 	/* The extra bit indicates that we support high capacity */
 	err = mmc_send_op_cond(host, ocr | (1 << 30), NULL);
@@ -341,6 +342,7 @@ static int mmc_init_card(struct mmc_host *host, u32 ocr,
 		err = mmc_all_send_cid(host, cid);
 	if (err)
 		goto err;
+#endif
 
 	if (oldcard) {
 		if (memcmp(cid, oldcard->raw_cid, sizeof(cid)) != 0) {
@@ -360,10 +362,14 @@ static int mmc_init_card(struct mmc_host *host, u32 ocr,
 		}
 
 		card->type = MMC_TYPE_MMC;
+#ifdef CONFIG_SDSWITCH_KA2000
+                card->rca = 0xe624;
+#else
 		card->rca = 1;
 		memcpy(card->raw_cid, cid, sizeof(card->raw_cid));
+#endif
 	}
-
+#ifndef CONFIG_SDSWTCH_KA2000
 	/*
 	 * For native busses:  set card RCA and quit open drain mode.
 	 */
@@ -473,6 +479,7 @@ static int mmc_init_card(struct mmc_host *host, u32 ocr,
 			mmc_set_bus_width(card->host, bus_width);
 		}
 	}
+#endif
 
 	if (!oldcard)
 		host->card = card;
@@ -680,9 +687,11 @@ int mmc_attach_mmc(struct mmc_host *host, u32 ocr)
 	 * support.
 	 */
 	if (ocr & 0x7F) {
+#ifndef CONFIG_SDSWITCH_KA2000
 		printk(KERN_WARNING "%s: card claims to support voltages "
 		       "below the defined range. These will be ignored.\n",
 		       mmc_hostname(host));
+#endif
 		ocr &= ~0x7F;
 	}
 

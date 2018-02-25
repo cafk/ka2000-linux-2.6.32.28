@@ -5928,6 +5928,13 @@ do_wait_for_common(struct completion *x, long timeout, int state)
 static long __sched
 wait_for_common(struct completion *x, long timeout, int state)
 {
+#ifdef CONFIG_ARCH_KA2000
+/*
+        if (!x || x < 0xc0000000)
+            return timeout;
+*/
+#endif
+
 	might_sleep();
 
 	spin_lock_irq(&x->wait.lock);

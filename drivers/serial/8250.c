@@ -1868,7 +1868,7 @@ static void wait_for_xmitr(struct uart_8250_port *up, int bits)
 
 		if (--tmout == 0)
 			break;
-		udelay(1);
+		//udelay(1);
 	} while ((status & bits) != bits);
 
 	/* Wait up to 1s for flow control if necessary */
@@ -1879,8 +1879,8 @@ static void wait_for_xmitr(struct uart_8250_port *up, int bits)
 			up->msr_saved_flags |= msr & MSR_SAVE_FLAGS;
 			if (msr & UART_MSR_CTS)
 				break;
-			udelay(1);
-			touch_nmi_watchdog();
+			//udelay(1);
+			//touch_nmi_watchdog();
 		}
 	}
 }

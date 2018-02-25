@@ -856,11 +856,21 @@ static int vfat_mkdir(struct inode *dir, struct dentry *dentry, int mode)
 	struct fat_slot_info sinfo;
 	struct timespec ts;
 	int err, cluster;
-
+#ifdef CONFIG_ARCH_KA2000
+	int is_dcim = 0;
+	char *name = dentry->d_name.name;
+#endif
 	lock_super(sb);
 
 	ts = CURRENT_TIME_SEC;
+#ifdef CONFIG_ARCH_KA2000
+	if (strcmp(name, "DCIM") == 0)
+		is_dcim = 1;
+	
+	cluster = fat_alloc_new_dir(dir, &ts, is_dcim);
+#else
 	cluster = fat_alloc_new_dir(dir, &ts);
+#endif
 	if (cluster < 0) {
 		err = cluster;
 		goto out;

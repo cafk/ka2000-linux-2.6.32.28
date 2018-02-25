@@ -22,6 +22,19 @@
 #include "mmc_ops.h"
 #include "sd_ops.h"
 
+#ifdef CONFIG_ARCH_KA2000
+static int null_delay(int t)
+{
+    int i, j;
+    for (i = 0; i < t; i++)
+    {
+        j++;
+        nop();
+    }
+
+    return j;
+}
+#endif
 static const unsigned int tran_exp[] = {
 	10000,		100000,		1000000,	10000000,
 	0,		0,		0,		0
@@ -228,6 +241,10 @@ static int mmc_read_switch(struct mmc_card *card)
 	if (status[13] & 0x02)
 		card->sw_caps.hs_max_dtr = 50000000;
 
+#ifdef CONFIG_ARCH_KA2000
+        null_delay(100);
+#endif
+
 out:
 	kfree(status);
 
@@ -432,9 +449,17 @@ static int mmc_sd_init_card(struct mmc_host *host, u32 ocr,
 		/*
 		 * Fetch SCR from card.
 		 */
-		err = mmc_app_send_scr(card, card->raw_scr);
+#ifdef CONFIG_ARCH_KA2000
+                null_delay(100);
+#endif
+
+           	err = mmc_app_send_scr(card, card->raw_scr);
 		if (err)
 			goto free_card;
+
+#ifdef CONFIG_ARCH_KA2000
+                null_delay(100);
+#endif
 
 		err = mmc_decode_scr(card);
 		if (err < 0)
@@ -478,6 +503,9 @@ static int mmc_sd_init_card(struct mmc_host *host, u32 ocr,
 	} else if (max_dtr > card->csd.max_dtr) {
 		max_dtr = card->csd.max_dtr;
 	}
+#ifdef CONFIG_ARCH_KA2000
+                null_delay(100);
+#endif
 
 	mmc_set_clock(host, max_dtr);
 
@@ -706,6 +734,9 @@ int mmc_attach_sd(struct mmc_host *host, u32 ocr)
 	/*
 	 * Detect and init the card.
 	 */
+#ifdef CONFIG_ARCH_KA2000
+                null_delay(100);
+#endif
 	err = mmc_sd_init_card(host, host->ocr, NULL);
 	if (err)
 		goto err;

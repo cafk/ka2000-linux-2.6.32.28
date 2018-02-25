@@ -7,7 +7,7 @@
  * Based on code from fs/super.c, copyright Linus Torvalds and others.
  * Heavily rewritten.
  */
-
+#include <linux/autoconf.h>
 #include <linux/syscalls.h>
 #include <linux/slab.h>
 #include <linux/sched.h>
@@ -33,6 +33,13 @@
 #include <asm/unistd.h>
 #include "pnode.h"
 #include "internal.h"
+#ifndef CONFIG_KA2000_PRINTK_ENABLE
+#define printk dprintk
+static inline int dprintk(const char *fmt, ...)
+{
+      return 0;
+}
+#endif
 
 #define HASH_SHIFT ilog2(PAGE_SIZE / sizeof(struct list_head))
 #define HASH_SIZE (1UL << HASH_SHIFT)

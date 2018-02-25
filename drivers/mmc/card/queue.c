@@ -41,11 +41,38 @@ static int mmc_prep_request(struct request_queue *q, struct request *req)
 	return BLKPREP_OK;
 }
 
+#if 1
+#define word_read(a)  	    __raw_readl(IO_ADDRESS(a))
+#define is_m1_busy() ((word_read(0xa000a008) & 0x1f) != 0x04)       //
+extern int detect_cmd;
+
+#include <linux/sched.h>
+#include <linux/delay.h>
+static int check_m1_idle(void)
+{
+    u32 m1s = word_read(0xa000a008) & 0xffff;
+    if ((m1s == 0x0804) || (m1s == 0x0803) || (m1s == 0x0004))
+    {
+		return 1;
+	}
+	else if ((m1s & 0x1f) == 4 || (m1s & 0x1f) == 3)
+	{
+		if (m1s == 0x0104 || m1s == 0x0204 || m1s == 0x0904 || m1s == 0x0504)
+			return 0;
+		else
+			return 1;
+	}
+
+	return 0;
+}
+
+
+#endif
+
 static int mmc_queue_thread(void *d)
 {
 	struct mmc_queue *mq = d;
 	struct request_queue *q = mq->queue;
-
 	current->flags |= PF_MEMALLOC;
 
 	down(&mq->thread_sem);
@@ -69,6 +96,19 @@ static int mmc_queue_thread(void *d)
 			down(&mq->thread_sem);
 			continue;
 		}
+#if 1
+	if (detect_cmd)
+      {
+		int  t = 100; //20; //100;
+		while (!check_m1_idle() && t--)
+		{
+			up(&mq->thread_sem);
+			schedule_timeout(50);
+			down(&mq->thread_sem);
+		}	
+		}
+#endif
+
 		set_current_state(TASK_RUNNING);
 
 		mq->issue_fn(mq, req);

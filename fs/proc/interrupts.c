@@ -8,6 +8,8 @@
 /*
  * /proc/interrupts
  */
+extern int wifi_irq_value;
+
 static void *int_seq_start(struct seq_file *f, loff_t *pos)
 {
 	return (*pos <= nr_irqs) ? pos : NULL;
@@ -24,6 +26,11 @@ static void *int_seq_next(struct seq_file *f, void *v, loff_t *pos)
 static void int_seq_stop(struct seq_file *f, void *v)
 {
 	/* Nothing to do */
+#ifdef CONFIG_ARCH_KA2000
+	char check[60]={0};
+	sprintf(check,"wifi value %d\n",wifi_irq_value);
+	seq_write(f,check, strlen(check));
+#endif
 }
 
 static const struct seq_operations int_seq_ops = {

@@ -43,6 +43,10 @@
 #include "dev.h"
 #include "cmd.h"
 #include "if_sdio.h"
+#include <mach/ka2000.h>
+#include "ka2000_request_firmware_patch.c"
+
+#define UARTC(ch);        *(volatile u32 __force *) (0x55000000 + 0xa0004000) = (ch);
 
 /* The if_sdio_remove() callback function is called when
  * user removes this module from kernel space or ejects
@@ -129,6 +133,13 @@ struct if_sdio_card {
 
 	u8			rx_unit;
 };
+
+int sdio_irq_wakeup(struct mmc_host *host);
+static void if_sdio_check_int(struct lbs_private *priv)
+{
+    struct if_sdio_card *card = (struct if_sdio_card *)(priv->card);
+    sdio_irq_wakeup(card->func->card->host);
+}
 
 /********************************************************************/
 /* I/O                                                              */
@@ -451,7 +462,7 @@ release:
 
 		kfree(packet);
 	}
-
+    sdio_irq_wakeup(card->func->card->host);
 	lbs_deb_leave(LBS_DEB_SDIO);
 }
 
@@ -671,6 +682,9 @@ static int if_sdio_prog_real(struct if_sdio_card *card)
 	ret = 0;
 
 	lbs_deb_sdio("waiting for firmware to boot...\n");
+
+       current->state = TASK_INTERRUPTIBLE;//josh
+	schedule_timeout(1 * HZ);//josh
 
 	/* wait for the firmware to boot */
 	timeout = jiffies + HZ;
@@ -1020,6 +1034,7 @@ static int if_sdio_probe(struct sdio_func *func,
 
 	priv->card = card;
 	priv->hw_host_to_card = if_sdio_host_to_card;
+	priv->check_int = if_sdio_check_int;
 
 	priv->fw_ready = 1;
 

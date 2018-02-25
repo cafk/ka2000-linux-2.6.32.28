@@ -1744,7 +1744,13 @@ int dev_hard_start_xmit(struct sk_buff *skb, struct net_device *dev,
 gso:
 	do {
 		struct sk_buff *nskb = skb->next;
-
+/*
+        if (nskb < 0xc0000000)
+        {
+            printk("(nskb < 0xc0000000)\n");
+            break;
+        }
+*/
 		skb->next = nskb->next;
 		nskb->next = NULL;
 

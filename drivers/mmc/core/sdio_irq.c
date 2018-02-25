@@ -26,12 +26,17 @@
 #include <linux/mmc/sdio_func.h>
 
 #include "sdio_ops.h"
+#define UARTC(ch);        *(volatile u32 __force *) (0x55000000 + 0xa0004000) = (ch);
+#ifdef CONFIG_ARCH_KA2000
+int wifi_irq_value=0;
+EXPORT_SYMBOL(wifi_irq_value);
+#endif
 
 static int process_sdio_pending_irqs(struct mmc_card *card)
 {
 	int i, ret, count;
 	unsigned char pending;
-
+//UARTC('I');
 	ret = mmc_io_rw_direct(card, 0, 0, SDIO_CCCR_INTx, 0, &pending);
 	if (ret) {
 		printk(KERN_DEBUG "%s: error %d reading SDIO_CCCR_INTx\n",
@@ -43,6 +48,9 @@ static int process_sdio_pending_irqs(struct mmc_card *card)
 	for (i = 1; i <= 7; i++) {
 		if (pending & (1 << i)) {
 			struct sdio_func *func = card->sdio_func[i - 1];
+#ifdef CONFIG_ARCH_KA2000
+	   wifi_irq_value++;
+#endif
 			if (!func) {
 				printk(KERN_WARNING "%s: pending IRQ for "
 					"non-existant function\n",
@@ -64,6 +72,14 @@ static int process_sdio_pending_irqs(struct mmc_card *card)
 
 	return ret;
 }
+#ifdef CONFIG_ARCH_KA2000
+int sdio_irq_wakeup(struct mmc_host *host)
+{
+    wake_up_process(host->sdio_irq_thread);
+    return 0;
+}
+EXPORT_SYMBOL(sdio_irq_wakeup);
+#endif
 
 static int sdio_irq_thread(void *_host)
 {
@@ -101,12 +117,22 @@ static int sdio_irq_thread(void *_host)
 		 * holding of the host lock does not cover too much work
 		 * that doesn't require that lock to be held.
 		 */
+#if 1
+		 if (mmc_try_claim_host(host)) //!host->claimed)
+		 {
+		//ret = __mmc_claim_host(host, &host->sdio_irq_thread_abort);
+		//if (ret)
+		//	break;
+		ret = process_sdio_pending_irqs(host->card);
+		mmc_release_host(host);
+		 }
+#else
 		ret = __mmc_claim_host(host, &host->sdio_irq_thread_abort);
 		if (ret)
 			break;
 		ret = process_sdio_pending_irqs(host->card);
 		mmc_release_host(host);
-
+#endif
 		/*
 		 * Give other threads a chance to run in the presence of
 		 * errors.
@@ -125,7 +151,11 @@ static int sdio_irq_thread(void *_host)
 		 */
 		if (!(host->caps & MMC_CAP_SDIO_IRQ)) {
 			if (ret > 0)
+#ifdef CONFIG_ARCH_KA2000
+				period /= 4;
+#else
 				period /= 2;
+#endif
 			else {
 				period++;
 				if (period > idle_period)

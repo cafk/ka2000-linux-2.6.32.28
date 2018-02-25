@@ -244,6 +244,13 @@ config SPI_XILINX
 	  See the "OPB Serial Peripheral Interface (SPI) (v1.00e)"
 	  Product Specification document (DS464) for hardware details.
 
+
+config SPI_KA2000
+	tristate "KeyASIC Ka2000 SPI controller"
+	depends on ARCH_KA2000
+	help
+	  SPI driver for KeyASIC Ka2000 SSI controller.	  
+
 #
 # Add new SPI master controllers in alphabetical order above this line
 #

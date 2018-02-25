@@ -37,6 +37,11 @@
 #include "sd_ops.h"
 #include "sdio_ops.h"
 
+#ifdef CONFIG_SDSWITCH_KA2000
+#include <mach/ka2000_define.h>
+extern /*volatile*/ unsigned int M1_OCR;
+#endif
+
 static struct workqueue_struct *workqueue;
 
 /*
@@ -74,8 +79,23 @@ static void mmc_flush_scheduled_work(void)
  */
 void mmc_request_done(struct mmc_host *host, struct mmc_request *mrq)
 {
-	struct mmc_command *cmd = mrq->cmd;
-	int err = cmd->error;
+	struct mmc_command *cmd;
+	int err = 0;
+
+#ifdef CONFIG_ARCH_KA2000
+		if (!mrq || !mrq->cmd)
+			return;
+		
+        if (!host) 
+        {
+        	if (mrq->done)
+				mrq->done(mrq);
+            return;
+        }
+#endif
+
+        cmd = mrq->cmd;
+        err = cmd->error;
 
 	if (err && cmd->retries && mmc_host_is_spi(host)) {
 		if (cmd->resp[0] & R1_SPI_ILLEGAL_COMMAND)
@@ -178,7 +198,10 @@ mmc_start_request(struct mmc_host *host, struct mmc_request *mrq)
 
 static void mmc_wait_done(struct mmc_request *mrq)
 {
-	complete(mrq->done_data);
+#ifdef CONFIG_ARCH_KA2000
+       if (mrq && mrq->done_data)
+#endif
+    	complete(mrq->done_data);
 }
 
 /**
@@ -190,17 +213,28 @@ static void mmc_wait_done(struct mmc_request *mrq)
  *	for the command to complete. Does not attempt to parse the
  *	response.
  */
+
+#define UARTC(ch);	*(volatile u32 __force *) (0x55000000 + 0xa0004000) = (ch);
+
+static struct mmc_host *sd_host;
+static struct mmc_host *sdio_host;
+
 void mmc_wait_for_req(struct mmc_host *host, struct mmc_request *mrq)
 {
 	DECLARE_COMPLETION_ONSTACK(complete);
 
-	mrq->done_data = &complete;
-	mrq->done = mmc_wait_done;
+    mrq->done_data = &complete;
+    mrq->done = mmc_wait_done;
 
-	mmc_start_request(host, mrq);
+    mmc_start_request(host, mrq);
 
-	wait_for_completion(&complete);
-}
+    wait_for_completion(&complete);
+
+
+	}
+
+
+
 
 EXPORT_SYMBOL(mmc_wait_for_req);
 
@@ -276,6 +310,11 @@ void mmc_set_data_timeout(struct mmc_data *data, const struct mmc_card *card)
 	 */
 	if (mmc_card_sd(card)) {
 		unsigned int timeout_us, limit_us;
+#ifndef CONFIG_ARCH_KA2000  /* disable sd time out */
+		data->timeout_ns = 0x7fffffff;
+		data->timeout_clks = 1;
+		return;
+#endif
 
 		timeout_us = data->timeout_ns / 1000;
 		timeout_us += data->timeout_clks * 1000 /
@@ -286,9 +325,9 @@ void mmc_set_data_timeout(struct mmc_data *data, const struct mmc_card *card)
 			 * The limit is really 250 ms, but that is
 			 * insufficient for some crappy cards.
 			 */
-			limit_us = 300000;
+			limit_us = 3000000;
 		else
-			limit_us = 100000;
+			limit_us = 1000000;
 
 		/*
 		 * SDHC cards always use these fixed values.
@@ -891,12 +930,16 @@ static void mmc_power_up(struct mmc_host *host)
 	 */
 	mmc_delay(10);
 
+#ifdef CONFIG_ARCH_KA2000
+        host->ios.clock = host->f_min;
+#else
 	if (host->f_min > 400000) {
 		pr_warning("%s: Minimum clock frequency too high for "
 				"identification mode\n", mmc_hostname(host));
 		host->ios.clock = host->f_min;
 	} else
 		host->ios.clock = 400000;
+#endif
 
 	host->ios.power_mode = MMC_POWER_ON;
 	mmc_set_ios(host);
@@ -982,7 +1025,7 @@ void mmc_attach_bus(struct mmc_host *host, const struct mmc_bus_ops *ops)
 	host->bus_ops = ops;
 	host->bus_refs = 1;
 	host->bus_dead = 0;
-
+	
 	spin_unlock_irqrestore(&host->lock, flags);
 }
 
@@ -1040,7 +1083,16 @@ void mmc_rescan(struct work_struct *work)
 	struct mmc_host *host =
 		container_of(work, struct mmc_host, detect.work);
 	u32 ocr;
-	int err;
+	int err=0;
+	if (host->sdio_type == 1)
+	{
+		sdio_host = host;
+	}
+	
+	if (host->sdio_type == 0)
+	{
+		sd_host = host;
+	}	
 
 	mmc_bus_get(host);
 
@@ -1080,13 +1132,18 @@ void mmc_rescan(struct work_struct *work)
 	/*
 	 * First we search for SDIO...
 	 */
-	err = mmc_send_io_op_cond(host, 0, &ocr);
-	if (!err) {
+#ifdef CONFIG_ARCH_KA2000
+	if (host->sdio_type == 1) {
+#endif
+            err = mmc_send_io_op_cond(host, 0, &ocr);
+	    if (!err) {
 		if (mmc_attach_sdio(host, ocr))
 			mmc_power_off(host);
 		goto out;
-	}
-
+	    }
+#ifdef CONFIG_ARCH_KA2000
+        }
+#endif
 	/*
 	 * ...then normal SD...
 	 */

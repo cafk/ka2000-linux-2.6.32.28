@@ -500,8 +500,10 @@ int mmc_attach_sdio(struct mmc_host *host, u32 ocr)
 	 * Can we support the voltage(s) of the card(s)?
 	 */
 	if (!host->ocr) {
+#ifndef CONFIG_ARCH_KA2000
 		err = -EINVAL;
 		goto err;
+#endif
 	}
 
 	/*

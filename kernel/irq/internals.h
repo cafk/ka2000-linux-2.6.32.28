@@ -96,4 +96,11 @@ static inline void print_irq_desc(unsigned int irq, struct irq_desc *desc)
 }
 
 #undef P
+#ifndef CONFIG_KA2000_PRINTK_ENABLE
+#define printk dprintk
+static inline int dprintk(const char *fmt, ...)
+{
+      return 0;
+}
+#endif
 

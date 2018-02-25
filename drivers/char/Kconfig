@@ -110,6 +110,12 @@ config BFIN_JTAG_COMM_CONSOLE
 	bool "Console on Blackfin JTAG"
 	depends on BFIN_JTAG_COMM=y
 
+config PWM_KA2000
+        bool "PWM device in KA200 EVM"
+        depends on ARCH_KA2000
+        help
+           This selects the KA2000 UART.  Say Y here.
+
 config SERIAL_NONSTANDARD
 	bool "Non-standard serial port support"
 	depends on HAS_IOMEM
@@ -986,6 +992,11 @@ config MWAVE
 
 	  To compile this driver as a module, choose M here: the
 	  module will be called mwave.
+
+config MOVTION_SENSOR
+	tristate "motion sensor support"
+	help
+	  Give userspace access to the motion sensor in KA2000 EVM
 
 config SCx200_GPIO
 	tristate "NatSemi SCx200 GPIO Support"
