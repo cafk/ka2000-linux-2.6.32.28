@@ -1,0 +1,7 @@
+    Wifi concurrence mode (AP and Client mode)
+    Wifi-Direct (iOS, Android, Windows, Mac)
+    Bluetooth Connect (iOS, Android, Windows, Mac)
+    GeoTagging (iOS, Android)
+    Facebook upload (iOS, Android)
+    System maintain ¡V SPI driver
+    System maintain ¡V SD/Switch driver

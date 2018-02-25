@@ -1,0 +1,21 @@
+config WLAN_SRC 
+	tristate "Marvell WLAN SRC Driver for 8787"
+	depends on CFG80211
+	select LIB80211
+	---help---
+	  This adds support for wireless adapters based on Marvell
+	  802.11n chipsets.
+
+	  If you choose to build it as a module, it will be called
+	  mwifiex.
+
+config WLAN_SRC_SDIO
+	tristate "Marvell WLAN  SDIO SRC Driver for SD8787"
+	depends on WLAN_SRC && MMC
+	select FW_LOADER
+	---help---
+	  This adds support for wireless adapters based on Marvell
+	  8787 chipset with SDIO interface.
+
+	  If you choose to build it as a module, it will be called
+	  mwifiex_sdio.
