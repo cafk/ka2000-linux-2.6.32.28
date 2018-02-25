@@ -22,13 +22,6 @@
 #include <asm/cachetype.h>
 #include <asm/pgtable.h>
 #include <asm/tlbflush.h>
-#ifndef CONFIG_KA2000_PRINTK_ENABLE
-#define printk dprintk
-static inline int dprintk(const char *fmt, ...)
-{
-      return 0;
-}
-#endif
 
 static unsigned long shared_pte_mask = L_PTE_MT_BUFFERABLE;
 

@@ -136,13 +136,6 @@ static inline void crypto_notify(unsigned long val, void *v)
 {
 	blocking_notifier_call_chain(&crypto_chain, val, v);
 }
-#ifndef CONFIG_KA2000_PRINTK_ENABLE
-#define printk dprintk
-static inline int dprintk(const char *fmt, ...)
-{
-      return 0;
-}
-#endif
 
 #endif	/* _CRYPTO_INTERNAL_H */
 

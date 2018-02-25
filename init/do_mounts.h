@@ -74,10 +74,3 @@ void md_run_setup(void);
 static inline void md_run_setup(void) {}
 
 #endif
-#ifndef CONFIG_KA2000_PRINTK_ENABLE
-#define printk dprintk1
-static inline int dprintk1(const char *fmt, ...)
-{
-      return 0;
-}
-#endif

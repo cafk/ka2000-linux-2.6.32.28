@@ -337,5 +337,4 @@ void __init parse_early_options(char *cmdline);
 #define __exit_p(x) NULL
 #endif
 
-
 #endif /* _LINUX_INIT_H */
